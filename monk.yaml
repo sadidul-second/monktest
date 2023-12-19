@@ -1,0 +1,61 @@
+namespace: monktest
+
+flask-app:
+  defines: runnable
+  metadata:
+    name: flask-app
+    description: A Flask web application serving a simple 'Hello, World!' response.
+    icon: https://emojiapi.dev/api/v1/robot.svg
+  containers:
+    flask-app:
+      image: env-4385.registry.local/flask-app:main-70e9a9a
+      build: .
+      dockerfile: Dockerfile.flask-app
+  services:
+    flask-default-port:
+      description: Default port for the Flask application
+      container: flask-app
+      port: 5000
+      host-port: 5000
+      publish: true
+      protocol: tcp
+  connections: {}
+  variables:
+    env-name:
+      env: ENV_NAME
+      type: string
+      value: default_value
+      description: Environment variable to determine the running environment
+
+nginx-proxy:
+  defines: runnable
+  metadata:
+    name: nginx-proxy
+    description: Nginx reverse proxy to forward requests to the Flask application.
+    icon: https://emojiapi.dev/api/v1/robot.svg
+  containers:
+    nginx-proxy:
+      image: env-4385.registry.local/nginx-proxy:main-70e9a9a
+      build: .
+      dockerfile: Dockerfile.nginx-proxy
+  services:
+    http:
+      description: HTTP port for nginx proxy
+      container: nginx-proxy
+      port: 80
+      host-port: 80
+      publish: true
+      protocol: tcp
+  connections:
+    flask-app-connection:
+      target: monktest/flask-app
+      service: flask-default-port
+      optional: true
+      description: Nginx reverse proxy forwards requests to the Flask application.
+  variables: {}
+
+stack:
+  defines: group
+  members:
+    - monktest/flask-app
+    - monktest/nginx-proxy
